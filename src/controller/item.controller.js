@@ -50,89 +50,6 @@ const addItem=asyncHandler(async(req,res)=>{
     };
     return res.status(201).json(new apiResponse(200,addItem,"Item added Succesfully") );
 })
-
-const getAllItemsByVendorId = asyncHandler(async (req, res) => {
-    const { vendorId } = req.query;
-    
-    // Check if restaurantId is provided
-    if (!vendorId) {
-        throw new apiError(400, "Please provide vendorId parameter");
-    }
-    
-    // Validate restaurant exists
-    const tempVendor = await Vendor.findOne({
-        _id: vendorId
-    });
-    
-    if (!tempVendor) {
-        throw new apiError(204, "Vendor not found");
-    }
-    
-    // Find all items for this restaurant
-    const items = await Item.find({ vendorId })
-        .populate('categoryId', 'categoryName')
-        .populate('vendorId', 'vendorName');
-    
-    return res.status(200).json(
-        new apiResponse(200, items, "Items fetched successfully")
-    );
-});
-
-const getItemByCategoryName = asyncHandler(async (req, res) => {
-    const { categoryName } = req.query;
-    
-    // Check if categoryName is provided
-    if (!categoryName) {
-        return res.status(400).json(
-            new apiResponse(400, null, "Please provide categoryName parameter")
-        );
-    }
-    
-    // Find category by name
-    const tempCategory = await Category.findOne({ 
-        categoryName: categoryName.trim().toUpperCase() 
-    });   
-    if (!tempCategory) {
-        return res.status(204).json(
-            new apiResponse(204, null, "Category not found")
-        );
-    }
-    
-    // Find all items for this category
-    const items = await Item.find({ categoryId: tempCategory._id })
-        .populate('categoryId', 'categoryName')
-        .populate('vendorId', 'name');
-        
-    if(!items || items.length === 0){
-        return res.status(404).json(
-            new apiResponse(404, null, "No items found for this category")
-        );
-    }
-
-    return res.status(200).json(
-        new apiResponse(200, items, "Items fetched successfully")
-    );
-});
-
-const getItemByName = asyncHandler(async (req, res) => {
-    const { itemName } = req.query;
-    
-    // Check if itemName is provided
-    if (!itemName) {
-        throw new apiError(400, "Please provide itemName parameter");
-    }
-    
-    // Find items by name
-    const items = await Item.find({ itemName: { $regex: new RegExp(itemName, 'i') }  })
-    .populate('vendorId', 'name');    
-    if(!items){
-        throw new apiError(404,"No items found")
-    }
-    return res.status(200).json(
-        new apiResponse(200, items, "Items fetched successfully")
-    );
-});
-
 const deleteItem = asyncHandler(async (req, res) => {
     const { itemId } = req.query;
     
@@ -153,20 +70,132 @@ const deleteItem = asyncHandler(async (req, res) => {
     );
 });
 
-const getAllItems = asyncHandler(async (req, res) => {
-    // Find all items with vendor details
-    const items = await Item.find({}).populate('vendorId', 'name');
+const getAllItemsByVendorId = asyncHandler(async (req, res) => {
+    const { vendorId } = req.query;
     
+    // Check if restaurantId is provided
+    if (!vendorId) {
+        throw new apiError(400, "Please provide vendorId parameter");
+    }
+    
+    // Validate restaurant exists
+    const tempVendor = await Vendor.findOne({
+        _id: vendorId
+    });
+    
+    if (!tempVendor) {
+        throw new apiError(204, "Vendor not found");
+    }
+    
+    // Find all items for this restaurant
+    const items = await Item.find({ vendorId })
+        .populate('vendorId', { _id: 1, name: 1 });
+    
+    return res.status(200).json({
+        statusCode: 200,
+        data: items,
+        message: "Items fetched successfully",
+        success: true
+    });
+});
+
+const getItemByCategoryName = asyncHandler(async (req, res) => {
+    const { categoryName } = req.query;
+    
+    // Check if categoryName is provided
+    if (!categoryName) {
+        throw new apiError(400, "Please provide categoryName parameter");
+    }
+    
+    // Find category by name
+    const tempCategory = await Category.findOne({ 
+        categoryName: categoryName.trim().toUpperCase() 
+    });   
+    if (!tempCategory) {
+        throw new apiError(204, "Category not found");
+    }
+    
+    // Find all items for this category
+    const items = await Item.find({ categoryId: tempCategory._id })
+        .populate('vendorId', { _id: 1, name: 1 });
+        
     if(!items || items.length === 0){
-        return res.status(404).json(
-            new apiResponse(404, null, "No items found")
-        );
+        throw new apiError(404, "No items found for this category");
     }
 
-    return res.status(200).json(
-        new apiResponse(200, items, "All items fetched successfully")
-    );
+    return res.status(200).json({
+        statusCode: 200,
+        data: items,
+        message: "Items fetched successfully",
+        success: true
+    });
 });
+
+const getItemByName = asyncHandler(async (req, res) => {
+    const { itemName } = req.query;
+    
+    // Check if itemName is provided
+    if (!itemName) {
+        throw new apiError(400, "Please provide itemName parameter");
+    }
+    
+    // Find items by name
+    const items = await Item.find({ itemName: { $regex: new RegExp(itemName, 'i') }  })
+        .populate('vendorId', { _id: 1, name: 1 });    
+
+    if(!items || items.length === 0){
+        throw new apiError(404, "No items found");
+    }
+
+    return res.status(200).json({
+        statusCode: 200,
+        data: items,
+        message: "Items fetched successfully",
+        success: true
+    });
+});
+
+const getAllItems = asyncHandler(async (req, res) => {
+    // Find all items with vendor details
+    const items = await Item.find({})
+        .populate('vendorId', { _id: 1, name: 1 });
+    
+    if(!items || items.length === 0){
+        throw new apiError(404, "No items found");
+    }
+
+    return res.status(200).json({
+        statusCode: 200,
+        data: items,
+        message: "All items fetched successfully",
+        success: true
+    });
+});
+
+const getItemByCategoryId = asyncHandler(async (req, res) => {
+    const { categoryId } = req.query;
+
+    // Check if categoryId is provided
+    if (!categoryId) {
+        throw new apiError(400, "Please provide categoryId parameter");
+    }
+
+    // Find items by categoryId and populate vendor details
+    const items = await Item.find({ categoryId })
+        .populate('vendorId', { _id: 1, name: 1 });
+
+    if (!items || items.length === 0) {
+        throw new apiError(404, "No items found for this category");
+    }
+
+    return res.status(200).json({
+        statusCode: 200,
+        data: items,
+        message: "Items fetched successfully",
+        success: true
+    });
+});
+
 
 
 export{
@@ -175,5 +204,6 @@ export{
     getItemByCategoryName,
     deleteItem,
     getItemByName,
-    getAllItems
+    getAllItems,
+    getItemByCategoryId
 }

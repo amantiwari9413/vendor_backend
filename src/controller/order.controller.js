@@ -5,6 +5,7 @@ import {Item} from "../model/item.model.js"
 // Create a new order
 export const createOrder = asyncHandler(async (req, res) => {
     const { user, vendor, items, deliveryAddress, paymentMethod } = req.body;
+    console.log(user, vendor, items, deliveryAddress, paymentMethod);
     if (!user || !vendor || !items || !deliveryAddress || !paymentMethod) {
         return res.status(400).json({
             success: false,
@@ -93,6 +94,9 @@ export const getOrdersByUser = asyncHandler(async (req, res) => {
     const orders = await Order.find({ user: req.query.userId })
     .populate('items.item', 'itemName itemPrice itemImg')
     .populate('vendor', 'name phone')
+    .populate('deliveryPerson', 'userName phoneNumber')
+    .sort({ createdAt: -1 }) // Sort by createdAt in descending order (latest first)
+    
     // Format the response with only the required fields
     const formattedOrders = orders.map(order => {
         const formattedItems = order.items.map(item => ({
@@ -102,6 +106,12 @@ export const getOrdersByUser = asyncHandler(async (req, res) => {
             itemImg: item.item.itemImg
         }));
 
+        // Format delivery person details
+        const deliveryPersonDetails = order.deliveryPerson ? {
+            name: order.deliveryPerson.userName,
+            phone: order.deliveryPerson.phoneNumber
+        } : null;
+
         return {
             _id: order._id,
             items: formattedItems,
@@ -109,6 +119,7 @@ export const getOrdersByUser = asyncHandler(async (req, res) => {
             totalPrice: order.totalAmount,
             vendorName: order.vendor.name,
             vendorPhone: order.vendor.phone,
+            deliveryPerson: deliveryPersonDetails,
             estimatedDeliveryTime: order.estimatedDeliveryTime || new Date(Date.now() + 30 * 60000)
         };
     });
