@@ -133,7 +133,9 @@ export const getOrdersByUser = asyncHandler(async (req, res) => {
 export const getOrdersByVendor = asyncHandler(async (req, res) => {
     const orders = await Order.find({ vendor: req.query.vendorId })
         .populate('items.item', 'itemName itemPrice itemImg')
-        .populate('user', 'userName phoneNumber');
+        .populate('deliveryPerson', 'userName phoneNumber')
+        .populate('user', 'userName phoneNumber')
+        .sort({ createdAt: -1 })
 
     // Format the response with only the required fields
     const formattedOrders = orders.map(order => {
@@ -143,6 +145,11 @@ export const getOrdersByVendor = asyncHandler(async (req, res) => {
             quantity: item.quantity,
             itemImg: item.item.itemImg
         }));
+        // Format delivery person details
+        const deliveryPersonDetails = order.deliveryPerson ? {
+            name: order.deliveryPerson.userName,
+            phone: order.deliveryPerson.phoneNumber
+        } : null;
 
         return {
             _id: order._id,
@@ -151,6 +158,7 @@ export const getOrdersByVendor = asyncHandler(async (req, res) => {
             totalPrice: order.totalAmount,
             userName: order.user.userName,
             userPhone: order.user.phoneNumber,
+            deliveryPerson: deliveryPersonDetails,
             estimatedDeliveryTime: order.estimatedDeliveryTime || new Date(Date.now() + 30 * 60000)
         };
     });

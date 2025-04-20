@@ -2,7 +2,7 @@ import { Vendor } from '../model/vendor.model.js';
 import apiError  from '../utills/apiError.js';
 import  apiResponse  from '../utills/apiResponse.js';
 import  asyncHandler  from '../utills/asyncHandler.js';
-
+import {generateAccessTokenAndRefereshToken} from '../utills/token.utills.js';
 
 const registerVendor = asyncHandler(async (req, res, next) => {
     const {
@@ -18,7 +18,8 @@ const registerVendor = asyncHandler(async (req, res, next) => {
         !name?.trim() ||
         !phone?.trim() ||
         !email?.trim() ||
-        !password?.trim()
+        !password?.trim() ||
+        !address?.trim()
     ) {
         throw new apiError(400, "All fields are required");
     }
@@ -79,4 +80,72 @@ const getAllVendor = asyncHandler(async (req, res, next) => {
     return res.status(200).json(new apiResponse(200, vendors, "Vendors fetched successfully"));
 });
 
-export { registerVendor, getAllVendor };
+const loginVendor = asyncHandler(async (req, res, next) => {
+    const { phone, password } = req.body;
+    // Check if phone and password are provided
+    if (!phone?.trim() || !password?.trim()) {
+        throw new apiError(400, "Phone number and password are required");
+    }
+
+    // Check if vendor exists by phone number
+    const vendor = await Vendor.findOne({ phone });
+    if (!vendor) {
+        throw new apiError(404, "Vendor not found");
+    }
+
+    // Check if password is correct
+    const isPasswordCorrect = await vendor.isPasswordCorrect(password);
+    if (!isPasswordCorrect) {
+        throw new apiError(401, "Invalid password");
+    }
+
+    // Generate access token and refresh token
+    const {accessToken,refreshToken,UserData} = await generateAccessTokenAndRefereshToken(vendor);
+
+    // Return success response
+    const options = {
+        httpOnly: true,
+        secure:true
+     }
+     return res.status(200)
+     .cookie("accessToken", accessToken, options)
+     .cookie("refreshToken", refreshToken, options)
+     .json(
+        new apiResponse(200,{
+           accessToken,
+           refreshToken,
+           UserData
+        }, 
+        "Vendor logged in successfully")
+     )
+});
+
+const logoutVendor = asyncHandler(async (req, res, next) => {
+   await Vendor.findByIdAndUpdate(
+      req.vendor._id,
+      {
+          $set:{
+              refreshToken:undefined 
+          }
+      },
+      {
+          new:true
+      }
+  )
+  const options={
+      httpOnly:true,
+      secure:true
+  }
+  return res
+  .status(200)
+  .clearCookie("accessToken",options)
+  .clearCookie("refreshToken", options)
+  .json(new apiResponse(200,{},"Vendor logged Out"))
+})
+
+
+
+
+
+
+export { registerVendor, getAllVendor, loginVendor, logoutVendor };

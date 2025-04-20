@@ -9,10 +9,9 @@ const generateAccessTokenAndRefereshToken = async function(User) {
         
         const UserData = {
             user_id: User._id,
-            userName: User.userName,
-            phoneNumber: User.phoneNumber
+            name: User.userName || User.name, // Handle both user and vendor
+            contact: User.phoneNumber || User.phone // Handle both user and vendor
         };
-        
         return { accessToken, refreshToken, UserData };
         
     } catch (error) {
