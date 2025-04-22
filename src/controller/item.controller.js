@@ -11,7 +11,7 @@ const addItem=asyncHandler(async(req,res)=>{
     const {itemName,itemPrice,itemImg,categoryId,vendorId}=req.body;
 
     if(itemName.trim() === "" && itemPrice.trim() === "" && itemImg.trim === "" && categoryId.trim() === "" && vendorId.trim() === ""){
-        throw new apiError(400,"all filds is required")
+        return res.status(400).json(new apiResponse(400, null, "All fields are required"));
     };
 
     const tempCategory = await Category.findOne({
@@ -23,16 +23,16 @@ const addItem=asyncHandler(async(req,res)=>{
     });
     
     if (!tempCategory) {
-        throw new apiError(204,"Category not found")
+        return res.status(204).json(new apiResponse(204, null, "Category not found"));
     };
 
     if (!tempVendor) {
-        throw new apiError(204,"Vendor not found")
+        return res.status(204).json(new apiResponse(204, null, "Vendor not found"));
     };
 
     // coloudinary part
     if(!req.file){
-        throw new apiError(400,"Item image is required")
+        return res.status(400).json(new apiResponse(400, null, "Item image is required"));
     }
     const imgUrl= await uploadeOnCloudinary(req.file.path)
     const name =itemName.trim().toUpperCase()
@@ -46,23 +46,24 @@ const addItem=asyncHandler(async(req,res)=>{
 
     const addItem= await Item.findById(tempitem._id)
     if(!addItem){
-        throw new apiError(500,"Error creating item")
+        return res.status(500).json(new apiResponse(500, null, "Error creating item"));
     };
     return res.status(201).json(new apiResponse(200,addItem,"Item added Succesfully") );
 })
+
 const deleteItem = asyncHandler(async (req, res) => {
     const { itemId } = req.query;
     
     // Check if itemId is provided
     if (!itemId) {
-        throw new apiError(400, "Please provide itemId parameter");
+        return res.status(400).json(new apiResponse(400, null, "Please provide itemId parameter"));
     }
     
     // Find and delete the item
     const deletedItem = await Item.findByIdAndDelete(itemId);
     
     if (!deletedItem) {
-        throw new apiError(404, "Item not found");
+        return res.status(404).json(new apiResponse(404, null, "Item not found"));
     }
     
     return res.status(200).json(
@@ -75,7 +76,7 @@ const getAllItemsByVendorId = asyncHandler(async (req, res) => {
     
     // Check if restaurantId is provided
     if (!vendorId) {
-        throw new apiError(400, "Please provide vendorId parameter");
+        return res.status(400).json(new apiResponse(400, null, "Please provide vendorId parameter"));
     }
     
     // Validate restaurant exists
@@ -84,7 +85,7 @@ const getAllItemsByVendorId = asyncHandler(async (req, res) => {
     });
     
     if (!tempVendor) {
-        throw new apiError(204, "Vendor not found");
+        return res.status(204).json(new apiResponse(204, null, "Vendor not found"));
     }
     
     // Find all items for this restaurant
@@ -104,7 +105,7 @@ const getItemByCategoryName = asyncHandler(async (req, res) => {
     
     // Check if categoryName is provided
     if (!categoryName) {
-        throw new apiError(400, "Please provide categoryName parameter");
+        return res.status(400).json(new apiResponse(400, null, "Please provide categoryName parameter"));
     }
     
     // Find category by name
@@ -112,7 +113,7 @@ const getItemByCategoryName = asyncHandler(async (req, res) => {
         categoryName: categoryName.trim().toUpperCase() 
     });   
     if (!tempCategory) {
-        throw new apiError(204, "Category not found");
+        return res.status(204).json(new apiResponse(204, null, "Category not found"));
     }
     
     // Find all items for this category
@@ -120,7 +121,7 @@ const getItemByCategoryName = asyncHandler(async (req, res) => {
         .populate('vendorId', { _id: 1, name: 1 });
         
     if(!items || items.length === 0){
-        throw new apiError(404, "No items found for this category");
+        return res.status(404).json(new apiResponse(404, null, "No items found for this category"));
     }
 
     return res.status(200).json({
@@ -136,7 +137,7 @@ const getItemByName = asyncHandler(async (req, res) => {
     
     // Check if itemName is provided
     if (!itemName) {
-        throw new apiError(400, "Please provide itemName parameter");
+        return res.status(400).json(new apiResponse(400, null, "Please provide itemName parameter"));
     }
     
     // Find items by name
@@ -144,7 +145,7 @@ const getItemByName = asyncHandler(async (req, res) => {
         .populate('vendorId', { _id: 1, name: 1 });    
 
     if(!items || items.length === 0){
-        throw new apiError(404, "No items found");
+        return res.status(404).json(new apiResponse(404, null, "No items found"));
     }
 
     return res.status(200).json({
@@ -161,7 +162,7 @@ const getAllItems = asyncHandler(async (req, res) => {
         .populate('vendorId', { _id: 1, name: 1 });
     
     if(!items || items.length === 0){
-        throw new apiError(404, "No items found");
+        return res.status(404).json(new apiResponse(404, null, "No items found"));
     }
 
     return res.status(200).json({
@@ -177,7 +178,7 @@ const getItemByCategoryId = asyncHandler(async (req, res) => {
 
     // Check if categoryId is provided
     if (!categoryId) {
-        throw new apiError(400, "Please provide categoryId parameter");
+        return res.status(400).json(new apiResponse(400, null, "Please provide categoryId parameter"));
     }
 
     // Find items by categoryId and populate vendor details
@@ -185,7 +186,7 @@ const getItemByCategoryId = asyncHandler(async (req, res) => {
         .populate('vendorId', { _id: 1, name: 1 });
 
     if (!items || items.length === 0) {
-        throw new apiError(404, "No items found for this category");
+        return res.status(404).json(new apiResponse(404, null, "No items found for this category"));
     }
 
     return res.status(200).json({

@@ -30,7 +30,6 @@ const vendorSchema = Schema({
     },
     isActive: { type: Boolean, default: true },
     rating: { type: Number, default: 0 },
-
 },
 {
     timestamps: true

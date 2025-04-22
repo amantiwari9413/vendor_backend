@@ -8,22 +8,30 @@ const addCategory = asyncHandler(async (req, res) => {
     const { categoryName, vendorId } = req.body;
 
     if (!categoryName || !vendorId) {
-        throw new apiError(400, "Category name and vendor ID are required");
+        return res.status(400).json(
+            new apiResponse(400, null, "Category name and vendor ID are required")
+        );
     }
 
     if (categoryName.trim() === "") {
-        throw new apiError(400, "Category name cannot be empty");
+        return res.status(400).json(
+            new apiResponse(400, null, "Category name cannot be empty")
+        );
     }
 
     // Validate vendorId format
     if (!vendorId.match(/^[0-9a-fA-F]{24}$/)) {
-        throw new apiError(400, "Invalid vendor ID format");
+        return res.status(400).json(
+            new apiResponse(400, null, "Invalid vendor ID format")
+        );
     }
 
     // Check if the vendorId exists
     const vendorExists = await Vendor.findById(vendorId);
     if (!vendorExists) {
-        throw new apiError(404, "Vendor not found");
+        return res.status(404).json(
+            new apiResponse(404, null, "Vendor not found")
+        );
     }
     const newCategory = await Category.create({
         categoryName: categoryName.trim().toUpperCase(),
@@ -43,7 +51,9 @@ const getCategoryByVendorId = asyncHandler(async (req, res) => {
     const { vendorId } = req.query;
     const category = await Category.find({ vendorId: vendorId });
     if (!category) {
-        throw new apiError(404, "Category not found");
+        return res.status(404).json(
+            new apiResponse(404, null, "Category not found")
+        );
     }
     return res.status(200).json(new apiResponse(200,category, "Category fetched successfully"));
     
@@ -54,7 +64,9 @@ const getAllUniqueCategories = asyncHandler(async (req, res) => {
     const categories = await Category.distinct("categoryName");
 
     if (!categories || categories.length === 0) {
-        throw new apiError(404, "No categories found");
+        return res.status(404).json(
+            new apiResponse(404, null, "No categories found")
+        );
     }
 
     return res.status(200).json(
